@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -44,11 +47,17 @@ namespace ObserviumDB
             c.password = password;
             c.databaseName = "observium";
             c.server = "rpbusobserv";
+
         }
 
         public static void usrPrompt()
         {
             int input;
+
+            Console.Write("Log in for tool access: \n");
+            var c = DBConnection.Instance();
+            setDB(c);
+
 
             do
             {
@@ -61,12 +70,12 @@ namespace ObserviumDB
                             "\n0) Exit" +
                             "\n\nMake a selection: ");
                 input = Convert.ToInt32(Console.ReadLine());
-                var c = DBConnection.Instance();
+                //var c = DBConnection.Instance();
 
                 switch (input)
                 {
                     case 1:
-                        setDB(c);
+                        //setDB(c);
                         inactivePorts(c);
                         c.Close();
                         break;
@@ -89,6 +98,16 @@ namespace ObserviumDB
         {
             int count = 0;
             if (c.IsConnect())
+                Console.WriteLine("\n");
+
+            Console.Write("Print to file? (Y/N) \n");
+            string answer = Console.ReadLine();
+
+            if (answer == "Y" || answer == "y" || answer == "yes" || answer == "Yes")
+            {
+                File.Create(@"C:\\Users\\" + c.userId + "\\Documents\\inactive_ports.txt").Close();
+            }
+
             {
                 string query = "SELECT d.device_id,hostname,p.port_label,p.ifLastChange FROM devices AS d JOIN ports AS p ON d.device_id = p.device_id WHERE p.ifOperStatus = 'down' AND p.ifLastChange >= NOW() - INTERVAL 3 MONTH AND UNIX_TIMESTAMP(p.ifLastChange) >= d.last_rebooted + 600;";
                 var cmd = new MySqlCommand(query, c.Connection);
@@ -103,15 +122,30 @@ namespace ObserviumDB
                         string lastChange = reader.GetString(3);
                         Console.WriteLine(device_id + "," + hostname + "," + port_label + "," + lastChange + ",");
                         count++;
+
+                        if (answer == "Y" || answer == "y" || answer == "yes" || answer == "Yes")
+                        {
+                            string lines = reader.GetString(0) + "," + reader.GetString(1) + "," + reader.GetString(2) + "," + reader.GetString(3)
+                                 + Environment.NewLine + "Number of inactive ports: " + count + Environment.NewLine;
+                            System.IO.File.AppendAllText(@"C:\\Users\\" + c.userId + "\\Documents\\inactive_ports.txt", lines);
+
+                        }
+
                     }
-                    Console.WriteLine("Number of inactive ports: " + count);
+                    Console.WriteLine("Number of inactive ports: " + count + "\n");
                     c.Close();
+
+                    if (answer == "N" || answer == "n" || answer == "no" || answer == "No")
+                    {
+                        c.Close();
+                    }
                 }
                 catch (Exception e)
                 {
                     Console.Out.Write(e.ToString());
                 }
             }
+            
         }
 
         public void outputData()

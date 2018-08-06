@@ -28,15 +28,17 @@ namespace ObserviumDB
         private static DBConnection _instance = null;
         public static DBConnection Instance()
         {
-            if (_instance == null)
-                _instance = new DBConnection();
+        
+            _instance = new DBConnection();
+    
             return _instance;
+
         }
 
         public bool IsConnect()
         {
-            if (Connection == null)
-            {
+            //if (Connection == null)
+            //{
                 if (String.IsNullOrEmpty(databaseName))
                     return false;
                 MySqlConnectionStringBuilder conn_string = new MySqlConnectionStringBuilder();
@@ -55,7 +57,7 @@ namespace ObserviumDB
                 {
                     Console.Out.Write(e.ToString());
                 }
-            }
+            //}
             return true;
         }
 
